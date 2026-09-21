@@ -1,0 +1,78 @@
+:root {
+  --color-bg: #f8fafc;
+  --color-surface: #ffffff;
+  --color-surface-accent: #e8f0ff;
+  --color-border: #dee3ed;
+  --color-text: #171f2e;
+  --color-muted: #616e85;
+  --color-primary: #2563eb;
+  --color-success: #17945c;
+  --color-warning: #eb9414;
+  --color-danger: #d12e2e;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --shadow-card: 0 10px 30px rgba(15, 23, 42, 0.06);
+
+  color: var(--color-text);
+  background: var(--color-bg);
+  font-family: Arial, Helvetica, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  margin: 0;
+  background: var(--color-bg);
+}
+
+a {
+  color: inherit;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+h1 {
+  color: var(--color-text);
+  font-size: 34px;
+  line-height: 1.2;
+}
+
+h2 {
+  color: var(--color-text);
+  font-size: 22px;
+  line-height: 1.25;
+}
+
+p {
+  line-height: 1.55;
+}
+
+.muted-text {
+  color: var(--color-muted);
+}
+
+.brand-text {
+  color: var(--color-primary);
+  font-size: 22px;
+  font-weight: 700;
+}

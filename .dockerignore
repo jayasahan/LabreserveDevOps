@@ -1,0 +1,12 @@
+node_modules
+**/node_modules
+.git
+.env
+.env.*
+dist
+**/dist
+*.log
+npm-debug.log*
+.vscode
+.idea
+Dockerfile.*
