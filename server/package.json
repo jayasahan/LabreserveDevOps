@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "seed:admin": "node scripts/seedAdmin.js",
-    "seed:equipment": "node scripts/seedEquipment.js"
+    "seed:equipment": "node scripts/seedEquipment.js",
+    "test:mysql": "node scripts/testMysqlConnection.js"
   },
   "keywords": [],
   "author": "",
@@ -19,6 +20,7 @@
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
     "mongodb": "^7.6.0",
-    "mongoose": "^9.10.0"
+    "mongoose": "^9.10.0",
+    "mysql2": "^3.15.3"
   }
 }

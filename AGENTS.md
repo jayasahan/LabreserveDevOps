@@ -18,7 +18,7 @@ The primary goals are:
 
 Do not overengineer this project.
 
-If there are multiple technically valid solutions, prefer the simplest solution that is clear, maintainable, and appropriate for an undergraduate MERN project.
+If there are multiple technically valid solutions, prefer the simplest solution that is clear, maintainable, and appropriate for an undergraduate three-tier web application project.
 
 ---
 
@@ -34,7 +34,6 @@ This is ONE Git repository.
 LabReserve/
 ├── client/
 ├── server/
-├── Dockerfile
 ├── AGENTS.md
 └── README.md
 ```
@@ -72,8 +71,9 @@ Use:
 * Node.js
 * Express.js
 * JavaScript
-* MongoDB
-* Mongoose
+* REST API routes under `/api`
+* `mysql2` for database access
+* direct, readable SQL queries
 
 Keep the backend structured using:
 
@@ -92,7 +92,12 @@ Do NOT introduce:
 * NestJS
 * GraphQL
 * Prisma
-* SQL databases
+* Sequelize
+* TypeORM
+* another ORM
+* MongoDB
+* MongoDB Atlas
+* Mongoose
 * microservices
 * Redis
 * WebSockets
@@ -102,19 +107,37 @@ Do NOT introduce:
 
 ## Database
 
-Production/development database:
+Development and production-like database:
 
-MongoDB Atlas
+MySQL
 
-ODM:
+Database driver:
 
-Mongoose
+`mysql2`
 
-## Production Deployment
+Do not introduce an ORM. Keep database access explicit and understandable with parameterized SQL queries.
 
-The completed application will be packaged as ONE Docker container.
+## Normal Development Architecture
 
-The intended production architecture is:
+```text
+Browser
+   |
+   v
+React/Vite development server
+   |
+   | /api (proxied by Vite)
+   v
+Express REST API
+   |
+   v
+MySQL
+```
+
+Vite is the React development server and build tool. It is not the production application server.
+
+## Normal Production-Like Architecture
+
+Build React with Vite into `client/dist`. Express remains the application web server and backend:
 
 ```text
 Browser
@@ -122,19 +145,17 @@ Browser
    v
 Express application
    |
-   +-- serves compiled React application
+   +-- serves compiled React application from client/dist
    |
    +-- handles /api/* REST endpoints
    |
    v
-MongoDB Atlas
+MySQL
 ```
 
-The intended cloud deployment target is Railway.
+Preserve the Express static React serving and single-page application fallback used for production-like runs.
 
-Dockerization and cloud deployment are LAST-STAGE tasks.
-
-Do not introduce Docker while the application is still being built unless explicitly requested.
+DevOps tooling, containerization, and cloud deployment are later learning stages. Do not introduce Docker, Docker Compose, Nginx, Kubernetes, CI/CD, or cloud deployment configuration unless explicitly requested in a later task.
 
 ---
 
@@ -183,11 +204,17 @@ The admin account should be created separately, such as through a controlled see
 
 ---
 
-# 5. Core Domain Models
+# 5. Core Database Entities
 
 Keep the database deliberately small.
 
-There are THREE primary models.
+There are exactly THREE primary tables/entities:
+
+```text
+users
+equipment
+requests
+```
 
 ## User
 
@@ -278,7 +305,7 @@ RETURNED
 CANCELLED
 ```
 
-Use Mongoose references for the associated User and Equipment.
+Store the associated user and equipment as foreign keys referencing the `users` and `equipment` tables.
 
 Do not add unnecessary fields.
 
@@ -316,13 +343,13 @@ The backend MUST enforce this.
 
 Do not rely only on disabling a frontend button.
 
-Where practical, use an atomic MongoDB/Mongoose operation such as conditionally updating equipment only when:
+Use a MySQL transaction and a conditional update that claims equipment only when:
 
 ```text
-status === AVAILABLE
+status = 'AVAILABLE'
 ```
 
-This prevents two simultaneous requests from both successfully claiming the same equipment.
+Check the affected-row count before creating the request. This prevents two simultaneous requests from both successfully claiming the same equipment. Roll back the transaction if the equipment was not claimed or request creation fails.
 
 Keep this implementation understandable and document the reasoning with concise comments where useful.
 
@@ -687,7 +714,7 @@ Backend:
 
 ```text
 express
-mongoose
+mysql2
 bcryptjs
 jsonwebtoken
 cors
@@ -774,7 +801,11 @@ Next.js
 NestJS
 GraphQL
 Prisma
-SQL
+Sequelize
+TypeORM
+MongoDB
+MongoDB Atlas
+Mongoose
 Redis
 microservices
 Kubernetes
@@ -784,27 +815,13 @@ cloud architecture beyond the final simple deployment
 
 ---
 
-# 23. Docker Rule
+# 23. DevOps Tooling Rule
 
-Docker will be introduced only after the full application works locally.
+Build and verify the normal three-tier application before adding DevOps tooling.
 
-Final target:
+Do not add Docker, Docker Compose, Nginx, Kubernetes, CI/CD pipelines, or cloud deployment files unless the user explicitly requests that later learning stage.
 
-```text
-React production build
-        +
-Node/Express API
-        =
-ONE Docker image
-        ↓
-ONE deployed application
-```
-
-Do not create separate frontend/backend production containers.
-
-Do not introduce Docker Compose unless a genuine requirement appears.
-
-MongoDB remains external through MongoDB Atlas.
+For normal production-like operation, Vite builds the React application into `client/dist`, and Express serves those compiled files while also handling `/api/*`. MySQL remains the database tier.
 
 ---
 
@@ -821,7 +838,7 @@ Implement student equipment dashboard
 Add equipment request workflow
 Add admin request actions
 Connect frontend authentication
-Add Docker production build
+Migrate database access to MySQL
 ```
 
 Do not commit:
@@ -849,4 +866,4 @@ working > feature-rich
 course fundamentals > production-scale architecture
 ```
 
-LabReserve is intentionally a small, polished, explainable MERN application.
+LabReserve is intentionally a small, polished, explainable React, Express, and MySQL application.
