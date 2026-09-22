@@ -1,8 +1,7 @@
 require('dotenv').config()
 
 const bcrypt = require('bcryptjs')
-const connectDatabase = require('../config/db')
-const User = require('../models/User')
+const pool = require('../config/mysql')
 
 async function seedAdmin() {
   const adminName = process.env.ADMIN_NAME
@@ -14,34 +13,38 @@ async function seedAdmin() {
   }
 
   const normalizedEmail = adminEmail.toLowerCase().trim()
-  const existingUser = await User.findOne({ email: normalizedEmail })
+  const [existingUsers] = await pool.execute(
+    'SELECT id, role FROM users WHERE email = ?',
+    [normalizedEmail]
+  )
+  const existingUser = existingUsers[0]
 
   if (existingUser) {
+    if (existingUser.role !== 'ADMIN') {
+      throw new Error('The configured admin email belongs to a non-admin account')
+    }
+
     console.log('Admin account already exists')
     return
   }
 
   const hashedPassword = await bcrypt.hash(adminPassword, 10)
-  await User.create({
-    name: adminName,
-    email: normalizedEmail,
-    password: hashedPassword,
-    role: 'ADMIN'
-  })
+  await pool.execute(
+    "INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, 'ADMIN')",
+    [adminName.trim(), normalizedEmail, hashedPassword]
+  )
 
   console.log('Admin account created')
 }
 
 async function main() {
   try {
-    await connectDatabase()
     await seedAdmin()
   } catch (error) {
     console.error('Admin seed failed')
     process.exitCode = 1
   } finally {
-    const mongoose = require('mongoose')
-    await mongoose.disconnect()
+    await pool.end()
   }
 }
 

@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken')
-const User = require('../models/User')
+const pool = require('../config/mysql')
 
 async function requireAuthentication(req, res, next) {
   try {
@@ -14,8 +14,22 @@ async function requireAuthentication(req, res, next) {
       return res.status(500).json({ message: 'Authentication is not configured' })
     }
 
-    const payload = jwt.verify(token, process.env.JWT_SECRET)
-    const user = await User.findById(payload.userId).select('-password')
+    let payload
+    try {
+      payload = jwt.verify(token, process.env.JWT_SECRET)
+    } catch (error) {
+      return res.status(401).json({ message: 'Invalid or expired token' })
+    }
+
+    if (!Number.isSafeInteger(payload.userId) || payload.userId < 1) {
+      return res.status(401).json({ message: 'Invalid or expired token' })
+    }
+
+    const [users] = await pool.execute(
+      'SELECT id, name, email, role, created_at AS createdAt FROM users WHERE id = ?',
+      [payload.userId]
+    )
+    const user = users[0]
 
     if (!user) {
       return res.status(401).json({ message: 'Authentication required' })
@@ -24,7 +38,7 @@ async function requireAuthentication(req, res, next) {
     req.user = user
     return next()
   } catch (error) {
-    return res.status(401).json({ message: 'Invalid or expired token' })
+    return res.status(500).json({ message: 'Unable to authenticate at this time' })
   }
 }
 
