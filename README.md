@@ -1,6 +1,6 @@
 # LabReserve
 
-LabReserve is a simple MERN web application for laboratory equipment requests and management.
+LabReserve is a simple React, Express, and MySQL web application for laboratory equipment requests and management.
 
 This repository is initialized with:
 

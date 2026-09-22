@@ -1,7 +1,7 @@
 const express = require('express')
 const cors = require('cors')
 const path = require('path')
-const connectDatabase = require('./config/db')
+const pool = require('./config/mysql')
 const authRoutes = require('./routes/authRoutes')
 const equipmentRoutes = require('./routes/equipmentRoutes')
 const requestRoutes = require('./routes/requestRoutes')
@@ -36,13 +36,14 @@ if (process.env.NODE_ENV === 'production') {
 
 async function startServer() {
   try {
-    await connectDatabase()
+    await pool.query('SELECT 1')
+    console.log('MySQL connected')
 
     app.listen(PORT, HOST, () => {
       console.log(`LabReserve API running on port ${PORT}`)
     })
   } catch (error) {
-    console.error('MongoDB connection failed')
+    console.error('MySQL connection failed')
     process.exitCode = 1
   }
 }

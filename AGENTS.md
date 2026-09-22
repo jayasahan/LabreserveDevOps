@@ -95,9 +95,6 @@ Do NOT introduce:
 * Sequelize
 * TypeORM
 * another ORM
-* MongoDB
-* MongoDB Atlas
-* Mongoose
 * microservices
 * Redis
 * WebSockets
@@ -803,9 +800,6 @@ GraphQL
 Prisma
 Sequelize
 TypeORM
-MongoDB
-MongoDB Atlas
-Mongoose
 Redis
 microservices
 Kubernetes
