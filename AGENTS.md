@@ -102,9 +102,13 @@ Do NOT introduce:
 
 ## Database
 
-Production/development database:
+Hosted production database:
 
 MongoDB Atlas
+
+Local Docker Compose development database:
+
+MongoDB in the `database` container
 
 ODM:
 
@@ -112,27 +116,28 @@ Mongoose
 
 ## Production Deployment
 
-The completed application will be packaged as ONE Docker container.
+The Docker Compose application uses three containers: a frontend, a backend, and a database.
 
-The intended production architecture is:
+The local container architecture is:
 
 ```text
 Browser
    |
    v
-Express application
+Nginx frontend container
    |
    +-- serves compiled React application
+   +-- proxies /api/* to the backend
    |
-   +-- handles /api/* REST endpoints
+Express backend container
    |
    v
-MongoDB Atlas
+MongoDB database container
 ```
 
 The intended cloud deployment target is Railway.
 
-Dockerization and cloud deployment are LAST-STAGE tasks.
+Cloud deployment remains a LAST-STAGE task.
 
 Do not introduce Docker while the application is still being built unless explicitly requested.
 
@@ -786,25 +791,13 @@ cloud architecture beyond the final simple deployment
 
 # 23. Docker Rule
 
-Docker will be introduced only after the full application works locally.
+The local Docker Compose setup uses three separate containers:
 
-Final target:
+* `frontend`: serves the React production build with Nginx
+* `backend`: runs the Node/Express API
+* `database`: runs MongoDB and stores data in a persistent named volume
 
-```text
-React production build
-        +
-Node/Express API
-        =
-ONE Docker image
-        ↓
-ONE deployed application
-```
-
-Do not create separate frontend/backend production containers.
-
-Do not introduce Docker Compose unless a genuine requirement appears.
-
-MongoDB remains external through MongoDB Atlas.
+Only the frontend port is published to the host. The backend and database communicate over the private Compose network. MongoDB Atlas remains the hosted database option outside the local Compose setup.
 
 ---
 

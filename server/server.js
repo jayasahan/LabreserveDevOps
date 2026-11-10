@@ -1,6 +1,5 @@
 const express = require('express')
 const cors = require('cors')
-const path = require('path')
 const connectDatabase = require('./config/db')
 const authRoutes = require('./routes/authRoutes')
 const equipmentRoutes = require('./routes/equipmentRoutes')
@@ -20,19 +19,6 @@ app.use('/api/requests', requestRoutes)
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', app: 'LabReserve API' })
 })
-
-if (process.env.NODE_ENV === 'production') {
-  const clientDistPath = path.join(__dirname, '..', 'client', 'dist')
-
-  app.use(express.static(clientDistPath))
-  app.use((req, res, next) => {
-    if (req.method !== 'GET' || req.path.startsWith('/api')) {
-      return next()
-    }
-
-    return res.sendFile(path.join(clientDistPath, 'index.html'))
-  })
-}
 
 async function startServer() {
   try {

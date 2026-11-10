@@ -49,6 +49,8 @@ LabReserve/
 ├── client/
 │   ├── src/
 │   ├── index.html
+│   ├── Dockerfile
+│   ├── nginx.conf
 │   ├── package.json
 │   └── vite.config.js
 ├── server/
@@ -61,6 +63,8 @@ LabReserve/
 │   ├── package.json
 │   └── server.js
 ├── Dockerfile
+├── compose.yaml
+├── .env.example
 ├── README.md
 └── .gitignore
 ```
@@ -101,6 +105,31 @@ Some of the most important rules in the project are:
 - Approve and reject pending requests
 - Mark borrowed equipment as returned
 
+## Docker Setup
+
+Docker Compose runs the application as three separate services:
+
+- `frontend`: builds the React app and serves it with Nginx on `http://localhost:3000`
+- `backend`: runs the Express API and connects to MongoDB over the private Compose network
+- `database`: runs MongoDB and stores its data in the persistent `mongo_data` volume
+
+The frontend's Nginx server forwards `/api` requests to the backend, so the browser uses the same origin for the UI and API.
+
+1. Copy `.env.example` to `.env` and set `JWT_SECRET` to a long, random value.
+2. From the project root, build and start all three services:
+
+```bash
+docker compose up --build
+```
+
+Open `http://localhost:3000`. To stop the services, press `Ctrl+C` and run:
+
+```bash
+docker compose down
+```
+
+The MongoDB volume is retained when the services are stopped. To also delete the database data, use `docker compose down --volumes`.
+
 ## Local Setup
 
 ### 1. Install dependencies
@@ -121,7 +150,7 @@ Create a `.env` file inside the `server/` folder with the required values:
 
 ```env
 PORT=5000
-MONGO_URI=your_mongodb_connection_string
+MONGODB_URI=your_mongodb_connection_string
 JWT_SECRET=your_secret_key
 ```
 
