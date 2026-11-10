@@ -18,6 +18,7 @@ function App() {
       <AuthProvider>
         <Routes>
           <Route path="/" element={<LoginPage />} />
+          <Route path="/admin/login" element={<LoginPage audience="admin" />} />
           <Route path="/register" element={<RegisterPage />} />
 
           <Route element={<ProtectedRoute allowedRole="STUDENT" />}>

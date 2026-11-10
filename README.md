@@ -60,11 +60,11 @@ LabReserve/
 │   ├── models/
 │   ├── routes/
 │   ├── scripts/
+│   ├── .env.example
 │   ├── package.json
 │   └── server.js
 ├── Dockerfile
 ├── compose.yaml
-├── .env.example
 ├── README.md
 └── .gitignore
 ```
@@ -107,28 +107,53 @@ Some of the most important rules in the project are:
 
 ## Docker Setup
 
-Docker Compose runs the application as three separate services:
+Docker Compose runs the frontend and backend in separate containers. MongoDB runs remotely (MongoDB Atlas), so it does not appear in `docker ps`:
 
 - `frontend`: builds the React app and serves it with Nginx on `http://localhost:3000`
-- `backend`: runs the Express API and connects to MongoDB over the private Compose network
-- `database`: runs MongoDB and stores its data in the persistent `mongo_data` volume
+- `backend`: runs the Express API and connects to the remote MongoDB URL in `server/.env`
+- `database`: remote MongoDB Atlas service, not a local Docker container
 
-The frontend's Nginx server forwards `/api` requests to the backend, so the browser uses the same origin for the UI and API.
+The frontend's Nginx server forwards `/api` requests to the backend, so the browser uses the same origin for the UI and API. Compose reads the database and JWT settings from `server/.env`.
 
-1. Copy `.env.example` to `.env` and set `JWT_SECRET` to a long, random value.
-2. From the project root, build and start all three services:
+### Start the whole project (PowerShell)
 
-```bash
-docker compose up --build
+1. Start Docker Desktop and wait for it to finish starting.
+2. If you do not already have `server/.env`, create it from the example and open it:
+
+```powershell
+Copy-Item .\server\.env.example .\server\.env
+notepad .\server\.env
 ```
 
-Open `http://localhost:3000`. To stop the services, press `Ctrl+C` and run:
+Set `MONGODB_URI` to your remote MongoDB connection string and set a private `JWT_SECRET`. Keep any existing admin settings that match the account in your remote database. Do not commit `server/.env`.
+
+3. From the repository root, build and start the containers in the background:
+
+```bash
+docker compose up --build -d
+```
+
+4. Confirm the containers are running:
+
+```bash
+docker compose ps
+```
+
+You should see `frontend` and `backend`; MongoDB is remote, so it will not appear as a container. Open the student sign-in page at `http://localhost:3000` or the admin sign-in page at `http://localhost:3000/admin/login`.
+
+To follow application logs, run:
+
+```bash
+docker compose logs -f
+```
+
+Press `Ctrl+C` to stop following logs; this does not stop the containers. To stop and remove the app containers and network, run:
 
 ```bash
 docker compose down
 ```
 
-The MongoDB volume is retained when the services are stopped. To also delete the database data, use `docker compose down --volumes`.
+To rebuild after changing application code, run `docker compose up --build -d` again. The remote MongoDB database is not stopped or changed by `docker compose down`.
 
 ## Local Setup
 

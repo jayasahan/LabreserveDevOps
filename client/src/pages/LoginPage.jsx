@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
 
-function LoginPage() {
+function LoginPage({ audience = 'student' }) {
+  const isAdminLogin = audience === 'admin'
   const navigate = useNavigate()
   const { login } = useAuth()
   const [formData, setFormData] = useState({ email: '', password: '' })
@@ -57,8 +58,17 @@ function LoginPage() {
         </svg>
       </section>
       <section className="auth-card" aria-labelledby="login-title">
-        <h2 id="login-title">Welcome back</h2>
-        <p className="muted-text">Sign in to continue</p>
+        <h2 id="login-title">{isAdminLogin ? 'Administrator sign in' : 'Welcome back'}</h2>
+        <p className="muted-text">
+          {isAdminLogin
+            ? 'Sign in with your administrator account.'
+            : 'Sign in to continue'}
+        </p>
+        {isAdminLogin && (
+          <p className="muted-text">
+            Admin access is assigned to your account; this page does not grant admin permissions.
+          </p>
+        )}
         <form className="form-stack" onSubmit={handleSubmit}>
           <label className="form-group"><span>Email</span><input name="email" type="email" placeholder="student@university.lk" value={formData.email} onChange={handleChange} required /></label>
           <label className="form-group"><span>Password</span><input name="password" type="password" placeholder="Password" value={formData.password} onChange={handleChange} required /></label>
@@ -66,8 +76,14 @@ function LoginPage() {
           <button className="button button-primary" type="submit" disabled={isSubmitting}>{isSubmitting ? 'Signing in...' : 'Sign in'}</button>
         </form>
         <div className="auth-links">
-          <Link to="/register">New student? Create an account</Link>
-          <span className="muted-text">Admins use this login too</span>
+          {isAdminLogin ? (
+            <Link to="/">Student login</Link>
+          ) : (
+            <>
+              <Link to="/register">New student? Create an account</Link>
+              <Link to="/admin/login">Administrator? Sign in here</Link>
+            </>
+          )}
         </div>
       </section>
     </main>

@@ -116,7 +116,7 @@ Mongoose
 
 ## Production Deployment
 
-The Docker Compose application uses three containers: a frontend, a backend, and a database.
+The Docker Compose application uses separate frontend and backend containers. MongoDB remains hosted remotely and is configured through `server/.env`.
 
 The local container architecture is:
 
@@ -132,7 +132,7 @@ Nginx frontend container
 Express backend container
    |
    v
-MongoDB database container
+Remote MongoDB database
 ```
 
 The intended cloud deployment target is Railway.
@@ -791,13 +791,13 @@ cloud architecture beyond the final simple deployment
 
 # 23. Docker Rule
 
-The local Docker Compose setup uses three separate containers:
+The local Docker Compose setup uses two application containers and a remote database:
 
 * `frontend`: serves the React production build with Nginx
 * `backend`: runs the Node/Express API
-* `database`: runs MongoDB and stores data in a persistent named volume
+* MongoDB: remote database configured through `server/.env`
 
-Only the frontend port is published to the host. The backend and database communicate over the private Compose network. MongoDB Atlas remains the hosted database option outside the local Compose setup.
+Only the frontend port is published to the host. The backend reaches MongoDB using the connection string in `server/.env`.
 
 ---
 
