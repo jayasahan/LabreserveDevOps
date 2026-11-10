@@ -116,7 +116,7 @@ Mongoose
 
 ## Production Deployment
 
-The Docker Compose application uses separate frontend and backend containers. MongoDB remains hosted remotely and is configured through `server/.env`.
+The local Docker Compose application uses separate frontend and backend containers plus a local MongoDB container. On first startup, an initialization task copies the configured Atlas database into the local MongoDB volume. The application then uses only the local database; it does not sync with Atlas.
 
 The local container architecture is:
 
@@ -132,7 +132,7 @@ Nginx frontend container
 Express backend container
    |
    v
-Remote MongoDB database
+Local MongoDB container
 ```
 
 The intended cloud deployment target is Railway.
@@ -791,13 +791,13 @@ cloud architecture beyond the final simple deployment
 
 # 23. Docker Rule
 
-The local Docker Compose setup uses two application containers and a remote database:
+The local Docker Compose setup uses three application containers:
 
 * `frontend`: serves the React production build with Nginx
 * `backend`: runs the Node/Express API
-* MongoDB: remote database configured through `server/.env`
+* `database`: local MongoDB with a persistent named volume
 
-Only the frontend port is published to the host. The backend reaches MongoDB using the connection string in `server/.env`.
+An initialization service copies one named database from Atlas into the local volume once. The backend connects only to the local MongoDB container. Atlas credentials are required only for this initial copy and are not passed to the backend.
 
 ---
 

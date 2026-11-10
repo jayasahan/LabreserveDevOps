@@ -107,13 +107,14 @@ Some of the most important rules in the project are:
 
 ## Docker Setup
 
-Docker Compose runs the frontend and backend in separate containers. MongoDB runs remotely (MongoDB Atlas), so it does not appear in `docker ps`:
+Docker Compose runs the frontend, backend, and a standard MongoDB container:
 
 - `frontend`: builds the React app and serves it with Nginx on `http://localhost:3000`
-- `backend`: runs the Express API and connects to the remote MongoDB URL in `server/.env`
-- `database`: remote MongoDB Atlas service, not a local Docker container
+- `backend`: runs the Express API and connects to the local `database` container
+- `database`: runs MongoDB and stores its files in the persistent `mongo_data` volume
+- `database-init`: on the first startup only, copies all collections, documents, indexes, and views from the configured Atlas database into the local database
 
-The frontend's Nginx server forwards `/api` requests to the backend, so the browser uses the same origin for the UI and API. Compose reads the database and JWT settings from `server/.env`.
+The Atlas connection is used only by `database-init`. The backend connects to the local MongoDB container and does not receive the Atlas URI. The initial copy is a one-time snapshot; subsequent starts keep using local data and do not sync with Atlas. The local MongoDB port is available only on this computer at `localhost:27017`.
 
 ### Start the whole project (PowerShell)
 
@@ -125,35 +126,43 @@ Copy-Item .\server\.env.example .\server\.env
 notepad .\server\.env
 ```
 
-Set `MONGODB_URI` to your remote MongoDB connection string and set a private `JWT_SECRET`. Keep any existing admin settings that match the account in your remote database. Do not commit `server/.env`.
+Set `MONGODB_SOURCE_URI` to your Atlas connection string and `MONGODB_SOURCE_DATABASE` to the database name you want copied. Set a private `JWT_SECRET`. `MONGODB_URI` should stay as `mongodb://localhost:27017/labreserve` for running the server from your computer; Compose overrides it inside the backend container. If your existing `.env` has the Atlas URL under `MONGODB_URI`, move that value to `MONGODB_SOURCE_URI`. Do not commit `server/.env`.
 
-3. From the repository root, build and start the containers in the background:
+3. From the repository root, build and start the containers:
 
-```bash
+```powershell
 docker compose up --build -d
 ```
 
-4. Confirm the containers are running:
+On first startup, Compose waits for MongoDB, copies the named Atlas database, then starts the backend and frontend. Confirm status with:
 
-```bash
+```powershell
 docker compose ps
 ```
 
-You should see `frontend` and `backend`; MongoDB is remote, so it will not appear as a container. Open the student sign-in page at `http://localhost:3000` or the admin sign-in page at `http://localhost:3000/admin/login`.
+Open the student sign-in page at `http://localhost:3000` or the admin sign-in page at `http://localhost:3000/admin/login`.
 
-To follow application logs, run:
+To view startup/import logs or follow application logs, run:
 
-```bash
+```powershell
+docker compose logs -f database-init
 docker compose logs -f
 ```
 
 Press `Ctrl+C` to stop following logs; this does not stop the containers. To stop and remove the app containers and network, run:
 
-```bash
+```powershell
 docker compose down
 ```
 
-To rebuild after changing application code, run `docker compose up --build -d` again. The remote MongoDB database is not stopped or changed by `docker compose down`.
+The local database volume survives `docker compose down` and rebuilds. To intentionally delete the local copy and import a fresh snapshot from Atlas next time, run:
+
+```powershell
+docker compose down -v
+docker compose up --build -d
+```
+
+`docker compose down -v` permanently deletes the local MongoDB data. It does not change Atlas.
 
 ## Local Setup
 
@@ -175,8 +184,16 @@ Create a `.env` file inside the `server/` folder with the required values:
 
 ```env
 PORT=5000
-MONGODB_URI=your_mongodb_connection_string
+MONGODB_URI=mongodb://localhost:27017/labreserve
+MONGODB_SOURCE_URI=your_remote_mongodb_connection_string
+MONGODB_SOURCE_DATABASE=labreserve
 JWT_SECRET=your_secret_key
+```
+
+Start the local MongoDB service and run the initial copy (this also builds the backend image used for the copy):
+
+```powershell
+docker compose up --build -d database-init
 ```
 
 ### 3. Start the backend
