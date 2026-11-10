@@ -211,6 +211,37 @@
   margin-bottom: 28px;
 }
 
+.equipment-sort {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.equipment-sort select {
+  width: min(280px, 100%);
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+
+@media (max-width: 600px) {
+  .equipment-sort {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .equipment-sort select {
+    width: 100%;
+  }
+}
+
 .filter-row {
   display: flex;
   flex-wrap: wrap;

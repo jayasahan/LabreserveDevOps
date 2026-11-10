@@ -2,10 +2,12 @@ import { useEffect, useMemo, useState } from 'react'
 import EquipmentCard from '../components/EquipmentCard.jsx'
 import PageLayout from '../components/PageLayout.jsx'
 import { fetchEquipment } from '../services/equipmentApi.js'
+import { sortEquipment } from '../utils/equipmentSorting.js'
 
 function EquipmentPage() {
   const [searchText, setSearchText] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('All')
+  const [sortOption, setSortOption] = useState('newest')
   const [equipmentItems, setEquipmentItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
@@ -25,7 +27,7 @@ function EquipmentPage() {
   const visibleEquipment = useMemo(() => {
     const normalizedSearch = searchText.trim().toLowerCase()
 
-    return equipmentItems.filter((equipment) => {
+    const filteredEquipment = equipmentItems.filter((equipment) => {
       const matchesCategory = selectedCategory === 'All' || equipment.category === selectedCategory
       const matchesSearch =
         !normalizedSearch ||
@@ -35,7 +37,9 @@ function EquipmentPage() {
 
       return matchesCategory && matchesSearch
     })
-  }, [searchText, selectedCategory])
+
+    return sortEquipment(filteredEquipment, sortOption)
+  }, [equipmentItems, searchText, selectedCategory, sortOption])
 
   return (
     <PageLayout
@@ -50,6 +54,18 @@ function EquipmentPage() {
           value={searchText}
           onChange={(event) => setSearchText(event.target.value)}
         />
+        <div className="equipment-sort">
+          <label htmlFor="equipment-sort">Sort by</label>
+          <select
+            id="equipment-sort"
+            value={sortOption}
+            onChange={(event) => setSortOption(event.target.value)}
+          >
+            <option value="newest">Newest first</option>
+            <option value="name-asc">Name (A–Z)</option>
+            <option value="name-desc">Name (Z–A)</option>
+          </select>
+        </div>
         <div className="filter-row" aria-label="Equipment categories">
           {categories.map((category) => (
             <button

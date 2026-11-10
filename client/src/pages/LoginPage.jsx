@@ -30,9 +30,31 @@ function LoginPage() {
   return (
     <main className="auth-page">
       <section className="auth-hero">
-        <p className="brand-text">LabReserve</p>
-        <h1>Engineering Lab Equipment Request System</h1>
-        <p>Request shared lab equipment using a simple first-come, first-served workflow.</p>
+        <div className="auth-hero__content">
+          <p className="brand-text">LabReserve</p>
+          <h1>Engineering Lab Equipment Request System</h1>
+          <p>Request shared lab equipment using a simple first-come, first-served workflow.</p>
+        </div>
+        <svg className="auth-hero__art" viewBox="0 0 400 220" aria-hidden="true" focusable="false">
+          <g fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="3">
+            <g>
+              <path d="m55 36 25-25 23 23-25 25z" />
+              <path d="m77 58 42 42m-9-9a38 38 0 0 1-38 44H54" />
+              <path d="M54 135v17m-23 0h88m-66-2a34 34 0 0 1 34-34" />
+              <circle cx="109" cy="99" r="7" />
+            </g>
+            <g>
+              <path d="M199 25v42l-32 65a14 14 0 0 0 13 20h59a14 14 0 0 0 13-20l-32-65V25" />
+              <path d="M188 25h43m-52 91h68m-55-20h42" />
+              <circle cx="207" cy="109" r="4" />
+              <circle cx="222" cy="104" r="3" />
+            </g>
+            <g>
+              <rect x="285" y="79" width="92" height="70" rx="8" />
+              <path d="M298 116h13l7-14 10 29 8-15h14m14-25h1m0 12h1m0 12h1m-47 34v12m24-12v12m-36 0h48" />
+            </g>
+          </g>
+        </svg>
       </section>
       <section className="auth-card" aria-labelledby="login-title">
         <h2 id="login-title">Welcome back</h2>
@@ -45,7 +67,7 @@ function LoginPage() {
         </form>
         <div className="auth-links">
           <Link to="/register">New student? Create an account</Link>
-          <Link to="/admin">Admin sign in</Link>
+          <span className="muted-text">Admins use this login too</span>
         </div>
       </section>
     </main>

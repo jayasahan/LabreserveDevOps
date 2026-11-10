@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
-const pool = require('../config/mysql')
+const User = require('../models/User')
 
 function createToken(userId) {
   if (!process.env.JWT_SECRET) {
@@ -12,7 +12,7 @@ function createToken(userId) {
 
 function publicUser(user) {
   return {
-    id: user.id,
+    id: user._id,
     name: user.name,
     email: user.email,
     role: user.role,
@@ -22,51 +22,24 @@ function publicUser(user) {
 
 async function register(req, res) {
   try {
-    const { name, email, password } = req.body || {}
+    const { name, email, password } = req.body
 
-    if (
-      typeof name !== 'string' ||
-      typeof email !== 'string' ||
-      typeof password !== 'string' ||
-      !name.trim() ||
-      !email.trim() ||
-      !password
-    ) {
+    if (!name || !email || !password) {
       return res.status(400).json({ message: 'Name, email, and password are required' })
     }
 
-    const normalizedName = name.trim()
-    const normalizedEmail = email.trim().toLowerCase()
-
-    if (normalizedName.length > 100 || normalizedEmail.length > 255) {
-      return res.status(400).json({ message: 'Name or email is too long' })
-    }
-
-    const [existingUsers] = await pool.execute(
-      'SELECT id FROM users WHERE email = ?',
-      [normalizedEmail]
-    )
-
-    if (existingUsers.length > 0) {
+    const existingUser = await User.findOne({ email: email.toLowerCase().trim() })
+    if (existingUser) {
       return res.status(409).json({ message: 'An account with that email already exists' })
     }
 
     const hashedPassword = await bcrypt.hash(password, 10)
-    const [insertResult] = await pool.execute(
-      "INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, 'STUDENT')",
-      [normalizedName, normalizedEmail, hashedPassword]
-    )
-
-    const [createdUsers] = await pool.execute(
-      'SELECT id, name, email, role, created_at AS createdAt FROM users WHERE id = ?',
-      [insertResult.insertId]
-    )
-    const user = createdUsers[0]
-    const token = createToken(user.id)
+    const user = await User.create({ name, email, password: hashedPassword, role: 'STUDENT' })
+    const token = createToken(user._id.toString())
 
     return res.status(201).json({ token, user: publicUser(user) })
   } catch (error) {
-    if (error.code === 'ER_DUP_ENTRY' || error.errno === 1062) {
+    if (error.code === 11000) {
       return res.status(409).json({ message: 'An account with that email already exists' })
     }
 
@@ -76,25 +49,20 @@ async function register(req, res) {
 
 async function login(req, res) {
   try {
-    const { email, password } = req.body || {}
+    const { email, password } = req.body
 
-    if (typeof email !== 'string' || typeof password !== 'string' || !email.trim() || !password) {
+    if (!email || !password) {
       return res.status(400).json({ message: 'Email and password are required' })
     }
 
-    const normalizedEmail = email.trim().toLowerCase()
-    const [users] = await pool.execute(
-      'SELECT id, name, email, password, role, created_at AS createdAt FROM users WHERE email = ?',
-      [normalizedEmail]
-    )
-    const user = users[0]
+    const user = await User.findOne({ email: email.toLowerCase().trim() })
     const passwordMatches = user && await bcrypt.compare(password, user.password)
 
     if (!passwordMatches) {
       return res.status(401).json({ message: 'Invalid email or password' })
     }
 
-    const token = createToken(user.id)
+    const token = createToken(user._id.toString())
     return res.json({ token, user: publicUser(user) })
   } catch (error) {
     return res.status(500).json({ message: 'Unable to log in at this time' })

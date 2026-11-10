@@ -2,5 +2,21 @@ node_modules/
 dist/
 .env
 .env.local
+.env.*
+!.env.example
 npm-debug.log*
 *.log
+
+# AI and editor metadata (non-essential project files)
+.copilot/
+.claude/
+.cursor/
+.gemini/
+.ai/
+.vscode/
+
+# Local AI assistant scratch files
+*.prompt.md
+*.instructions.md
+*.agent.md
+*.copilot

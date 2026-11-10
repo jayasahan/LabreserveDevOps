@@ -33,12 +33,31 @@
 }
 
 .auth-hero {
+  position: relative;
+  overflow: hidden;
   display: flex;
-  flex-direction: column;
   justify-content: center;
-  gap: 24px;
   padding: 70px;
   background: var(--color-surface-accent);
+}
+
+.auth-hero__content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.auth-hero__art {
+  position: absolute;
+  right: 3%;
+  bottom: 3%;
+  width: min(400px, 58%);
+  height: auto;
+  color: var(--color-primary);
+  opacity: 0.16;
+  pointer-events: none;
 }
 
 .auth-hero h1 {
@@ -132,6 +151,13 @@
 
   .auth-hero {
     padding: 44px 24px;
+  }
+
+  .auth-hero__art {
+    right: -24px;
+    bottom: 0;
+    width: 220px;
+    opacity: 0.12;
   }
 
   .auth-hero h1 {
