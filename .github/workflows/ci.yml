@@ -26,6 +26,11 @@ jobs:
       - name: Install client dependencies
         run: npm ci --prefix client
 
+      - name: Check server JavaScript syntax
+        run: |
+          find server -type f -name '*.js' -not -path 'server/node_modules/*' -print0 |
+            xargs -0 -n1 node --check
+
       - name: Run server tests
         run: npm test --prefix server
 
