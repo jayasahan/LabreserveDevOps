@@ -114,7 +114,7 @@ Docker Compose runs the frontend, backend, and a standard MongoDB container:
 - `database`: runs MongoDB and stores its files in the persistent `mongo_data` volume
 - `database-init`: on the first startup only, copies all collections, documents, indexes, and views from the configured Atlas database into the local database
 
-The Atlas connection is used only by `database-init`. The backend connects to the local MongoDB container and does not receive the Atlas URI. The initial copy is a one-time snapshot; subsequent starts keep using local data and do not sync with Atlas. The local MongoDB port is available only on this computer at `localhost:27017`.
+The Atlas connection is used only by `database-init`. The backend connects to the local MongoDB container and does not receive the Atlas URI. The initial copy is a one-time snapshot; subsequent starts keep using local data and do not sync with Atlas. The MongoDB container is available to host tools at `localhost:27018`; inside Compose, the backend uses `database:27017`.
 
 ### Start the whole project (PowerShell)
 
@@ -184,7 +184,7 @@ Create a `.env` file inside the `server/` folder with the required values:
 
 ```env
 PORT=5000
-MONGODB_URI=mongodb://localhost:27017/labreserve
+MONGODB_URI=mongodb://localhost:27018/labreserve
 MONGODB_SOURCE_URI=your_remote_mongodb_connection_string
 MONGODB_SOURCE_DATABASE=labreserve
 JWT_SECRET=your_secret_key
