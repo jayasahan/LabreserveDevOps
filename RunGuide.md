@@ -1,239 +1,51 @@
 # LabReserve Run Guide
 
-This guide explains how to start and stop LabReserve on Windows using PowerShell and Docker Desktop.
+Run commands below in PowerShell from the repository root. See [README.md](README.md#docker-setup) for environment setup, seed accounts, and migration details.
 
-## What runs
+## First startup
 
-Docker Compose starts:
-
-- **Frontend:** the website at `http://localhost:3000`
-- **Backend:** the API used by the website
-- **Database:** local MongoDB, saved in a Docker volume
-- **Database initializer:** a one-time task that copies a database from Atlas the first time the local database is empty
-
-After the copy, the app uses the local database. It does not keep syncing with Atlas. The local MongoDB port for tools such as MongoDB Compass is `27018`.
-
-## First-time setup
-
-### 1. Start Docker Desktop
-
-Open Docker Desktop and wait for it to finish starting.
-
-### 2. Open PowerShell in the project folder
-
-```powershell
-cd "C:\Users\jayas\Desktop\MY PROJECTS\LabreserveDevOps"
-```
-
-### 3. Check Docker
-
-```powershell
-docker version
-docker compose version
-```
-
-Both commands should show version information without an error.
-
-### 4. Set up the environment file
-
-The file `server\.env` contains private settings. If it does not exist, create it from the example:
-
-```powershell
-Copy-Item .\server\.env.example .\server\.env
-```
-
-Open it:
-
-```powershell
-notepad .\server\.env
-```
-
-For the first import from Atlas, set these values:
-
-```env
-MONGODB_URI=mongodb://localhost:27018/labreserve
-MONGODB_SOURCE_URI=your_Atlas_connection_string
-MONGODB_SOURCE_DATABASE=your_Atlas_database_name
-PORT=5000
-JWT_SECRET=your_private_secret
-```
-
-Replace the example values with your own. `MONGODB_SOURCE_DATABASE` is the database name in Atlas. Keep any existing `ADMIN_*` settings. Save the file and close Notepad.
-
-In Atlas, make sure the database user can read the selected database and that Atlas Network Access allows your current IP address.
-
-**Never share or commit `server\.env`. Do not paste its contents into chat.**
-
-### 5. Build and start the application
-
-Run these commands from the project folder:
+1. Start Docker Desktop and wait until its engine is ready.
+2. Copy `server/.env.example` to `server/.env` if needed.
+3. Set the JWT secret, admin details, and student password. Keep the local MongoDB URI from the example.
+4. Run:
 
 ```powershell
 docker compose config -q
-docker compose up --build -d
-```
-
-The first startup waits for local MongoDB, imports the configured Atlas database, and then starts the backend and frontend. It can take a few minutes.
-
-### 6. Check that it started
-
-```powershell
-docker compose ps -a
-docker compose logs database-init
+docker compose up --build -d --remove-orphans
+docker compose ps
 Invoke-RestMethod http://localhost:3000/api/health
 ```
 
-The `database-init` service should show `Exited (0)` after a successful import. That is normal; it is a one-time task. Its log should say `Initial remote database copy completed`. MongoDB and the backend should show as healthy, and the health check should return `status: ok`.
+Exactly three services run: frontend, backend, and database. The database uses the official MongoDB image. The backend seeds one admin, two students, and 12 equipment items from local scripts before opening the API. No remote data is used. Requests start empty.
 
-Open the website at:
+Open http://localhost:3000. Students sign in as `student1@example.com` or `student2@example.com` with the configured `STUDENT_PASSWORD`. Admin login is http://localhost:3000/admin/login using your `ADMIN_EMAIL` and `ADMIN_PASSWORD`.
 
-```text
-http://localhost:3000
-```
-
-## Start the application next time
-
-The local database is already initialized, so there is no need to re-import from Atlas for normal use.
-
-1. Start Docker Desktop.
-2. Open PowerShell and go to the project folder:
-
-   ```powershell
-   cd "C:\Users\jayas\Desktop\MY PROJECTS\LabreserveDevOps"
-   ```
-
-3. Start the app:
-
-   ```powershell
-   docker compose up -d
-   ```
-
-4. Check it and open the website:
-
-   ```powershell
-   docker compose ps
-   Invoke-RestMethod http://localhost:3000/api/health
-   ```
-
-   Go to `http://localhost:3000` in your browser.
-
-Use `docker compose up --build -d` instead if you changed the application code and need Docker to rebuild the images.
-
-## Stop the application
-
-From the project folder, run:
+## Normal use
 
 ```powershell
+docker compose up -d
+docker compose logs -f backend
 docker compose down
 ```
 
-This stops and removes the LabReserve containers and network. **It keeps the local MongoDB data.** Start it again later with `docker compose up -d`.
+Press Ctrl+C to stop following logs. Shutdowns keep the local data. Use `docker compose up --build -d` after code changes. The seed completion marker prevents restarts from resetting records.
 
-## Useful commands
+## Fresh seed
 
-Show service status:
-
-```powershell
-docker compose ps -a
-```
-
-Show logs:
-
-```powershell
-docker compose logs
-```
-
-Follow logs while the app runs. Press `Ctrl+C` to stop viewing logs; this does not stop the app:
-
-```powershell
-docker compose logs -f
-```
-
-Show logs for one service:
-
-```powershell
-docker compose logs database
-docker compose logs database-init
-docker compose logs backend
-docker compose logs frontend
-```
-
-Rebuild and restart after changing code:
-
-```powershell
-docker compose up --build -d
-```
-
-## Import a fresh copy from Atlas
-
-Only do this if you intentionally want to erase the local database and copy Atlas again.
-
-> **Warning:** The next command permanently deletes LabReserve's local MongoDB data. It does not delete or change the Atlas database.
+This permanently deletes the current local database, including all changes made through the app:
 
 ```powershell
 docker compose down -v
 docker compose up --build -d
 ```
 
-The new startup performs the initial Atlas copy again. Do not use `down -v` just to stop the app.
+The next start seeds from the repository again. The new `local_mongo_data` volume is separate from the old setup's detached `mongo_data` volume.
 
 ## Troubleshooting
 
-### Docker is not running
+- Docker connection error: start Docker Desktop and check `docker version`.
+- Backend unhealthy: check `docker compose logs backend database`. Ensure all seed settings are supplied and passwords are at least six characters. Admin and sample student emails must differ.
+- Port conflict: free port 3000 or 27018, or adjust the host mapping in `compose.yaml`. If changing 27018, update the host-run backend URI too.
+- Old database URL: the backend rejects remote hosts. Use `mongodb://localhost:27018/labreserve` for host development; Compose supplies its own local URI.
 
-Start Docker Desktop, wait until it is ready, then check:
-
-```powershell
-docker version
-```
-
-### Port 3000 is already in use
-
-Another app is using the website port. Stop that app or change the frontend port mapping in `compose.yaml`.
-
-### Port 27018 is already in use
-
-Another app is using the optional local MongoDB port. The app containers communicate with MongoDB over Docker's private network, but the current Compose setup also publishes MongoDB on the host. Stop the other app or change the published port in `compose.yaml`.
-
-### The import fails
-
-Read the initializer and database logs:
-
-```powershell
-docker compose logs database-init
-docker compose logs database
-```
-
-Check that `MONGODB_SOURCE_URI` and `MONGODB_SOURCE_DATABASE` in `server\.env` are correct. In Atlas, check the database user's permissions and Network Access IP allowlist. Do not share logs or settings that contain passwords or connection strings.
-
-### The app is not responding
-
-Check service status and backend logs:
-
-```powershell
-docker compose ps -a
-docker compose logs backend
-docker compose logs frontend
-```
-
-## Running without Docker
-
-For local development without the frontend and backend containers, the backend expects MongoDB at `mongodb://localhost:27018/labreserve`. Start the Docker MongoDB service first:
-
-```powershell
-docker compose up -d database
-```
-
-Then, in separate PowerShell windows:
-
-```powershell
-Set-Location "C:\Users\jayas\Desktop\MY PROJECTS\LabreserveDevOps\server"
-node server.js
-```
-
-```powershell
-Set-Location "C:\Users\jayas\Desktop\MY PROJECTS\LabreserveDevOps\client"
-npm run dev
-```
-
-The Vite development website address is printed in the client terminal. To stop the local database afterward, return to the project folder and run `docker compose down`.
+For host development and explicit admin password changes, follow [README.md](README.md#local-development).

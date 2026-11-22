@@ -107,124 +107,101 @@ Some of the most important rules in the project are:
 
 ## Docker Setup
 
-Docker Compose runs the frontend, backend, and a standard MongoDB container:
+Compose runs exactly three containers:
 
-- `frontend`: builds the React app and serves it with Nginx on `http://localhost:3000`
-- `backend`: runs the Express API and connects to the local `database` container
-- `database`: runs MongoDB and stores its files in the persistent `mongo_data` volume
-- `database-init`: on the first startup only, copies all collections, documents, indexes, and views from the configured Atlas database into the local database
+- `frontend`: React served by Nginx at http://localhost:3000
+- `backend`: Express API; seeds local data before accepting requests
+- `database`: official `mongo:8.0` image from Docker Hub, with persistent `local_mongo_data` storage
 
-The Atlas connection is used only by `database-init`. The backend connects to the local MongoDB container and does not receive the Atlas URI. The initial copy is a one-time snapshot; subsequent starts keep using local data and do not sync with Atlas. The MongoDB container is available to host tools at `localhost:27018`; inside Compose, the backend uses `database:27017`.
+All database data originates locally. There are no remote database connections, imports, or synchronization. Internet access is only needed to download images and build dependencies the first time.
 
-### Start the whole project (PowerShell)
+### First startup (PowerShell)
 
-1. Start Docker Desktop and wait for it to finish starting.
-2. If you do not already have `server/.env`, create it from the example and open it:
+Start Docker Desktop. From the repository root, create the settings file if it does not already exist:
 
 ```powershell
 Copy-Item .\server\.env.example .\server\.env
 notepad .\server\.env
 ```
 
-Set `MONGODB_SOURCE_URI` to your Atlas connection string and `MONGODB_SOURCE_DATABASE` to the database name you want copied. Set a private `JWT_SECRET`. `MONGODB_URI` should stay as `mongodb://localhost:27017/labreserve` for running the server from your computer; Compose overrides it inside the backend container. If your existing `.env` has the Atlas URL under `MONGODB_URI`, move that value to `MONGODB_SOURCE_URI`. Do not commit `server/.env`.
-
-3. From the repository root, build and start the containers:
+Set `JWT_SECRET`, `ADMIN_NAME`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and `STUDENT_PASSWORD`. Passwords must contain at least six characters. Keep `MONGODB_URI=mongodb://localhost:27018/labreserve`. Compose overrides this with `mongodb://database:27017/labreserve` inside the backend. Never commit `server/.env`.
 
 ```powershell
-docker compose up --build -d
-```
-
-On first startup, Compose waits for MongoDB, copies the named Atlas database, then starts the backend and frontend. Confirm status with:
-
-```powershell
+docker compose config -q
+docker compose up --build -d --remove-orphans
 docker compose ps
+docker compose logs backend
 ```
 
-Open the student sign-in page at `http://localhost:3000` or the admin sign-in page at `http://localhost:3000/admin/login`.
+The backend waits for healthy MongoDB, seeds it, and starts the API. The frontend then starts. Open http://localhost:3000 or http://localhost:3000/admin/login.
 
-To view startup/import logs or follow application logs, run:
+### Moving from the previous setup
 
-```powershell
-docker compose logs -f database-init
-docker compose logs -f
-```
+Remove obsolete source/import variables from your existing `server/.env`, replace its database URI with the local URI above, and add `STUDENT_PASSWORD`. The new `local_mongo_data` volume starts clean and never reads the previous `mongo_data` volume. `--remove-orphans` removes the obsolete initializer container. The previous volume is left detached; it is not used by this application.
 
-Press `Ctrl+C` to stop following logs; this does not stop the containers. To stop and remove the app containers and network, run:
+### Stop or reset
 
 ```powershell
 docker compose down
 ```
 
-The local database volume survives `docker compose down` and rebuilds. To intentionally delete the local copy and import a fresh snapshot from Atlas next time, run:
+Normal shutdowns and rebuilds preserve local data. To intentionally erase the current local data and seed a fresh database:
 
 ```powershell
 docker compose down -v
 docker compose up --build -d
 ```
 
-`docker compose down -v` permanently deletes the local MongoDB data. It does not change Atlas.
+The reset permanently deletes the current local database volume.
 
-## Local Setup
+## Local Development
 
-### 1. Install dependencies
-
-From the project root, install the frontend and backend dependencies separately:
-
-```bash
-cd client
-npm install
-
-cd ../server
-npm install
-```
-
-### 2. Configure environment variables
-
-Create a `.env` file inside the `server/` folder with the required values:
-
-```env
-PORT=5000
-MONGODB_URI=mongodb://localhost:27018/labreserve
-MONGODB_SOURCE_URI=your_remote_mongodb_connection_string
-MONGODB_SOURCE_DATABASE=labreserve
-JWT_SECRET=your_secret_key
-```
-
-Start the local MongoDB service and run the initial copy (this also builds the backend image used for the copy):
+Start only MongoDB in Docker:
 
 ```powershell
-docker compose up --build -d database-init
+docker compose up -d database
 ```
 
-### 3. Start the backend
+Run the backend from one terminal:
 
-```bash
+```powershell
 cd server
-node server.js
+npm ci
+npm start
 ```
 
-### 4. Start the frontend
+Run the frontend from another terminal:
 
-In a separate terminal:
-
-```bash
+```powershell
 cd client
+npm ci
 npm run dev
 ```
 
-The frontend will run using Vite, and the backend will serve the API routes under `/api`.
+The backend seeds automatically in this mode too. MongoDB is accessible to local tools at `mongodb://localhost:27018/labreserve`. Only loopback hosts and the Docker `database` hostname are accepted by the connection helper.
 
 ## Seed Data
 
-The server includes scripts for initial setup:
+The initial seed creates:
 
-```bash
-cd server
-npm run seed:admin
-npm run seed:equipment
+- One ADMIN using the `ADMIN_*` settings.
+- Nimal Perera (`student1@example.com`) and Amaya Silva (`student2@example.com`), both STUDENT accounts using `STUDENT_PASSWORD`.
+- 12 AVAILABLE equipment items across Electronics, Networking, Embedded Systems, and Tools.
+
+Passwords are hashed using bcrypt. Requests start empty so students can demonstrate requesting, cancellation, approval, rejection, and return through the app.
+
+A `local-seed-v1` record in the `initialization` collection is written only after all seed steps succeed. Later starts skip seeding, preserving changed passwords, deleted equipment, and request states. If the first seed is interrupted, rerunning skips records already created and finishes the remaining work.
+
+To run the same initial seed manually from `server/`, use `npm run seed`. To explicitly add missing sample equipment, use `npm run seed:equipment`.
+
+To change the admin password, update `ADMIN_PASSWORD` in `server/.env`, then recreate the backend so it receives the updated environment and run the admin script:
+
+```powershell
+docker compose up -d backend
+docker compose exec backend npm run seed:admin
 ```
 
-These are useful for creating an initial admin account and example equipment records during development.
+For a host-run backend, run `npm run seed:admin` from `server/`. The command hashes the new password and updates the configured admin; it refuses to promote an existing student account. Changing seed settings alone does not modify already-seeded accounts.
 
 ## API Summary
 
