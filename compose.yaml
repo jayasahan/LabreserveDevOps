@@ -5,29 +5,12 @@ services:
     ports:
       - "127.0.0.1:27018:27017"
     volumes:
-      - mongo_data:/data/db
+      - local_mongo_data:/data/db
     healthcheck:
       test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
       interval: 10s
       timeout: 5s
       retries: 5
-
-  database-init:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    env_file:
-      - ./server/.env
-    environment:
-      NODE_ENV: production
-      MONGODB_URI: mongodb://database:27017/labreserve
-      MONGODB_LOCAL_URI: mongodb://database:27017/labreserve
-      MONGODB_LOCAL_DATABASE: labreserve
-    command: ["node", "scripts/initializeLocalDatabase.js"]
-    restart: "no"
-    depends_on:
-      database:
-        condition: service_healthy
 
   backend:
     build:
@@ -41,11 +24,9 @@ services:
       PORT: 5000
       HOST: 0.0.0.0
       MONGODB_URI: mongodb://database:27017/labreserve
-      MONGODB_SOURCE_URI: ""
-      MONGODB_SOURCE_DATABASE: ""
     depends_on:
-      database-init:
-        condition: service_completed_successfully
+      database:
+        condition: service_healthy
     healthcheck:
       test:
         [
@@ -71,4 +52,4 @@ services:
         condition: service_healthy
 
 volumes:
-  mongo_data:
+  local_mongo_data:

@@ -13,6 +13,11 @@ async function connectDatabase() {
     throw new Error('MONGODB_URI is missing')
   }
 
+  // Prevent old or accidental remote settings from opening an online connection.
+  if (!/^mongodb:\/\/(localhost|127\.0\.0\.1|\[::1\]|database)(:\d+)?\/labreserve$/.test(mongodbUri)) {
+    throw new Error('MONGODB_URI must point to the local labreserve database')
+  }
+
   try {
     await mongoose.connect(mongodbUri, { serverSelectionTimeoutMS: 5000 })
     console.log('MongoDB connected')

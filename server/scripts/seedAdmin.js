@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs')
 const connectDatabase = require('../config/db')
 const User = require('../models/User')
 
-async function seedAdmin() {
+async function seedAdmin({ updateExisting = true } = {}) {
   const adminName = process.env.ADMIN_NAME
   const adminEmail = process.env.ADMIN_EMAIL
   const adminPassword = process.env.ADMIN_PASSWORD
@@ -13,11 +13,25 @@ async function seedAdmin() {
     throw new Error('ADMIN_NAME, ADMIN_EMAIL, and ADMIN_PASSWORD are required')
   }
 
+  if (adminPassword.length < 6) {
+    throw new Error('ADMIN_PASSWORD must be at least 6 characters')
+  }
+
   const normalizedEmail = adminEmail.toLowerCase().trim()
   const existingUser = await User.findOne({ email: normalizedEmail })
 
   if (existingUser) {
-    console.log('Admin account already exists')
+    if (existingUser.role !== 'ADMIN') {
+      throw new Error('The configured admin email belongs to a non-admin user')
+    }
+
+    if (!updateExisting) return
+
+    existingUser.name = adminName
+    existingUser.password = await bcrypt.hash(adminPassword, 10)
+    await existingUser.save()
+
+    console.log('Admin account updated')
     return
   }
 
@@ -45,4 +59,6 @@ async function main() {
   }
 }
 
-main()
+if (require.main === module) main()
+
+module.exports = seedAdmin
