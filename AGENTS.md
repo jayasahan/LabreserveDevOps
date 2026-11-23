@@ -102,11 +102,7 @@ Do NOT introduce:
 
 ## Database
 
-Hosted production database:
-
-MongoDB Atlas
-
-Local Docker Compose development database:
+Local database:
 
 MongoDB in the `database` container
 
@@ -116,7 +112,7 @@ Mongoose
 
 ## Production Deployment
 
-The local Docker Compose application uses separate frontend and backend containers plus a local MongoDB container. On first startup, an initialization task copies the configured Atlas database into the local MongoDB volume. The application then uses only the local database; it does not sync with Atlas.
+The local Docker Compose application uses separate frontend and backend containers plus a local MongoDB container. On first startup, the backend seeds initial accounts and equipment from local scripts before accepting requests. The application uses only local MongoDB and never imports remote data.
 
 The local container architecture is:
 
@@ -797,7 +793,7 @@ The local Docker Compose setup uses three application containers:
 * `backend`: runs the Node/Express API
 * `database`: local MongoDB with a persistent named volume
 
-An initialization service copies one named database from Atlas into the local volume once. The backend connects only to the local MongoDB container. Atlas credentials are required only for this initial copy and are not passed to the backend.
+The backend seeds initial equipment, student accounts, and an admin account from local scripts before listening. A completion marker prevents reseeding on subsequent starts. Use the official mongo image and the persistent local_mongo_data volume. There is no separate initialization service or remote database connection.
 
 ---
 
