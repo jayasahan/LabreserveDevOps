@@ -8,10 +8,10 @@ pipeline {
 
     options {
         timestamps()
+        disableConcurrentBuilds()
     }
 
     stages {
-
         stage('Checkout') {
             steps {
                 echo 'Checking out LabReserve source code'
@@ -59,11 +59,68 @@ pipeline {
                 }
             }
         }
+
+        stage('Build and Push Docker Images') {
+            steps {
+                script {
+                    def imageTag = sh(
+                        script: 'git rev-parse --short=7 HEAD',
+                        returnStdout: true
+                    ).trim()
+
+                    echo "Building images for commit: ${imageTag}"
+
+                    withCredentials([
+                        usernamePassword(
+                            credentialsId: 'dockerhub-creds',
+                            usernameVariable: 'DOCKERHUB_USER',
+                            passwordVariable: 'DOCKERHUB_TOKEN'
+                        )
+                    ]) {
+                        sh """
+                            set -eu
+
+                            echo "\$DOCKERHUB_TOKEN" | docker login \
+                                --username "\$DOCKERHUB_USER" \
+                                --password-stdin
+
+                            trap 'docker logout >/dev/null 2>&1 || true' EXIT
+
+                            echo "Building backend image..."
+
+                            docker build \
+                                -t "\$DOCKERHUB_USER/labreserve-backend:${imageTag}" \
+                                -t "\$DOCKERHUB_USER/labreserve-backend:latest" \
+                                -f Dockerfile .
+
+                            echo "Building frontend image..."
+
+                            docker build \
+                                -t "\$DOCKERHUB_USER/labreserve-frontend:${imageTag}" \
+                                -t "\$DOCKERHUB_USER/labreserve-frontend:latest" \
+                                -f client/Dockerfile ./client
+
+                            echo "Pushing backend images..."
+
+                            docker push "\$DOCKERHUB_USER/labreserve-backend:${imageTag}"
+                            docker push "\$DOCKERHUB_USER/labreserve-backend:latest"
+
+                            echo "Pushing frontend images..."
+
+                            docker push "\$DOCKERHUB_USER/labreserve-frontend:${imageTag}"
+                            docker push "\$DOCKERHUB_USER/labreserve-frontend:latest"
+
+                            echo "Both images successfully pushed!"
+                        """
+                    }
+                }
+            }
+        }
     }
 
     post {
         success {
-            echo 'LabReserve CI pipeline completed successfully!'
+            echo 'LabReserve CI/CD pipeline completed successfully!'
         }
 
         failure {
